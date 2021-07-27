@@ -3,7 +3,7 @@ import json
 import hashlib
 import re
 
-from hash_house.config import Config
+from hash_house.util import limit_content_length
 
 class Storage:
 
@@ -11,7 +11,6 @@ class Storage:
         return 'foobar'
 
     def save(self, key, value):
-        # take in bytes
         return True
 
 
@@ -36,22 +35,24 @@ class Message:
 
 
 app = Flask(__name__)
-config = Config()
+app.config.from_object("hash_house.config.Config")
+
 
 @app.route("/")
 def root():
-    return json.dumps({"response": "Welcome to Hash House. POST to /submit to store a string message and get a hash (something like this: {'message': 'foo'}). GET /messages/$HEXDIGEST to retrieve a message."}), 200
+    return json.dumps({"info": "Welcome to Hash House. POST to /submit to store a string message and get a hash (something like this: {'message': 'foo'}). GET /messages/$HEXDIGEST to retrieve a message."}), 200
 
 
 @app.route("/submit", methods=["POST"])
+@limit_content_length(app.config['MAX_CONTENT_LENGTH'])
 def submit_message():
     payload = request.get_json()
 
     if "message" not in payload:
-        return json.dumps({"response": "'message' key not present in payload"}), 400
+        return json.dumps({"error": "'message' key not present in payload"}), 400
 
-    if len(payload['message']) > config.UPLOAD_SIZE_LIMIT:
-        return json.dumps({"response": f"'message' is longer than {str(config.UPLOAD_SIZE_LIMIT / 1024 / 1024)}M"}), 400
+    if len(payload['message']) > app.config['UPLOAD_SIZE_LIMIT']:
+        return json.dumps({"error": f"'message' is longer than {str(app.config['UPLOAD_SIZE_LIMIT'] / 1024 / 1024)}M"}), 400
 
     message = Message()
     message.save(payload['message'])
@@ -61,7 +62,7 @@ def submit_message():
 @app.route("/messages/<_hash>", methods=["GET"])
 def retrieve_message(_hash):
 
-    error = json.dumps({"message": "/messages/$HASH must be a sha256 hex digest."})
+    error = json.dumps({"error": "/messages/$HASH must be a sha256 hex digest."})
 
     # Basic check so we use less regex
     if len(_hash) != 64:
@@ -73,5 +74,8 @@ def retrieve_message(_hash):
 
     message = Message()
     message.get(_hash)
-    return json.dumps({"message": str(message.body)}), 200
+    if message.body is not None:
+        return json.dumps({"message": message.body}), 200
+
+    return json.dumps({"error": "not found"}), 404
 
