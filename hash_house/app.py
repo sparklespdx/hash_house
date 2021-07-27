@@ -1,7 +1,9 @@
 from flask import Flask, request
 import json
 import hashlib
+import re
 
+from hash_house.config import Config
 
 class Storage:
 
@@ -23,8 +25,9 @@ class Message:
     def _do_hashing(self, content):
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-    def get(self, hash):
+    def get(self, _hash):
         self.body = self.storage.get(_hash)
+        self._hash = _hash
 
     def save(self, body):
         self.body = body
@@ -33,7 +36,7 @@ class Message:
 
 
 app = Flask(__name__)
-
+config = Config()
 
 @app.route("/")
 def root():
@@ -47,21 +50,21 @@ def submit_message():
     if "message" not in payload:
         return json.dumps({"response": "'message' key not present in payload"}), 400
 
-    if len(payload['message']) > 1024 * 1024:
-        return json.dumps({"response": "'message' is longer that 1MB"}), 400
+    if len(payload['message']) > config.UPLOAD_SIZE_LIMIT:
+        return json.dumps({"response": f"'message' is longer than {str(config.UPLOAD_SIZE_LIMIT / 1024 / 1024)}M"}), 400
 
     message = Message()
     message.save(payload['message'])
     return json.dumps({"hash": str(message._hash)}), 200
 
 
-@app.route("/messages/<hash>", methods=["GET"])
+@app.route("/messages/<_hash>", methods=["GET"])
 def retrieve_message(_hash):
 
     error = json.dumps({"message": "/messages/$HASH must be a sha256 hex digest."})
 
     # Basic check so we use less regex
-    if len(thehash) != 64:
+    if len(_hash) != 64:
         return error, 400
 
     # Regex match for sha256 hex digest as a string
@@ -72,6 +75,3 @@ def retrieve_message(_hash):
     message.get(_hash)
     return json.dumps({"message": str(message.body)}), 200
 
-
-if __name__ == "__main__":
-    app.run()
