@@ -52,3 +52,10 @@ python3 -c "import bcrypt; bcrypt.hashpw(b"my-new-api-key", bcrypt.gensalt())"
 ```
 
 I recommend using `pwgen` to generate passwords and keys.
+
+
+### Deployment
+
+This service is currently deployed to a bare metal system using the Systemd unit file and nginx configuration found in `deploy/` and the Dockerfile found in the root of the project. The Systemd unit is "self-deploying", it just needs AWS credentials and an API key JSON file to be provided to it. See `hash_house.service` for more information.
+
+Hash House could also be deployed using container orchestration such as Kubernetes or an app engine like Heroku.
