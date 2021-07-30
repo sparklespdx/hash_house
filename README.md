@@ -22,10 +22,15 @@ python3 run_dev.py
 
 ### Endpoints
 
-* / shows a help message
-* /submit accepts POST requests to upload a new message in JSON format. The request body should look like this: `{"message": "foobar"}`. The Content-Type should be "application/json".
-* /messages/$HEXDIGEST accepts GET requests to retrieve a message given a hex digest. An example would look like this: `curl https://hashhouse.moop.energy/messages/798f012674b5b8dcab4b00114bdf6738a69a4cdcf7ca0db1149260c9f81b73f7`
-
+* / shows a help message.
+* /submit accepts POST requests to upload a new message in JSON format. An example would look like this:
+```
+curl -H "Content-Type: application/json" -d '{"message": "foobar"}' -XPOST https://hashhouse.moop.energy/submit
+```
+* /messages/$HEXDIGEST accepts GET requests to retrieve a message given a hex digest. An example would look like this:
+```
+curl https://hashhouse.moop.energy/messages/798f012674b5b8dcab4b00114bdf6738a69a4cdcf7ca0db1149260c9f81b73f7
+```
 
 ### Authentication
 
