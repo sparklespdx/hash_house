@@ -51,3 +51,13 @@ resource "aws_iam_user_policy" "hashhouse-s3" {
 EOF
 }
 
+
+resource "aws_route53_record" "hashhouse" {
+  // existing r53 zone, hard coded ID. Not great but it works.
+  zone_id = "Z101926935KP3WTS06ESR"
+  name    = "hashhouse.moop.energy"
+  type    = "CNAME"
+  ttl     = "300"
+
+  records        = ["moop.energy"]
+}
