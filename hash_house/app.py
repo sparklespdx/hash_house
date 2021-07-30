@@ -39,8 +39,10 @@ class Message:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def get(self, _hash):
-        self.body = self.storage.get(_hash).decode("utf-8")
-        self._hash = _hash
+        item = self.storage.get(_hash)
+        if item is not None:
+            self.body = item.decode("utf-8")
+            self._hash = _hash
 
     def save(self, body):
         self.body = body
