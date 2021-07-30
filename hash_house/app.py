@@ -7,6 +7,8 @@ import re
 from flask import Flask, request
 from flask_httpauth import HTTPTokenAuth
 
+from botocore.exceptions import ClientError
+
 from hash_house.util import limit_content_length, put_object, get_object
 
 
