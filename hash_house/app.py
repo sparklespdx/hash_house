@@ -4,20 +4,23 @@ import hashlib
 import re
 import boto3
 
-from hash_house.util import limit_content_length
+from hash_house.util import limit_content_length, put_object, get_object
 
 
 class Storage:
 
-    def __init__(self, dynamodb_table):
-        self.table = dynamodb_table
+    def __init__(self, s3_bucket):
+        self.bucket = s3_bucket
 
     def get(self, key):
-        item = self.table.get_item(Key={'key': key})
-        return item['value']
+        try:
+            item = get_object(self.bucket, key) 
+        except ClientError:
+            item = None
+        return item
 
     def save(self, key, value):
-        self.table.put_item(Item={'key': key, 'value': value})
+        put_object(self.bucket, key, value)
 
 
 class Message:
@@ -31,7 +34,7 @@ class Message:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def get(self, _hash):
-        self.body = self.storage.get(_hash)
+        self.body = self.storage.get(_hash).decode("utf-8")
         self._hash = _hash
 
     def save(self, body):
@@ -43,9 +46,9 @@ class Message:
 app = Flask(__name__)
 app.config.from_object("hash_house.config.Config")
 
-# TODO DynamoDB stuff here
-table = None
-storage = Storage(table)
+s3 = boto3.resource('s3')
+bucket = s3.Bucket(app.config['S3_BUCKET_NAME'])
+storage = Storage(bucket)
 
 
 @app.route("/")
@@ -66,8 +69,11 @@ def submit_message():
         return json.dumps({"error": f"'message' is longer than {str(app.config['UPLOAD_SIZE_LIMIT'] / 1024 / 1024)}M"}), 400
 
     message = Message(storage)
+    #try:
     message.save(payload['message'])
     return json.dumps({"hash": str(message._hash)}), 200
+    #except:
+    #    return json.dumps({"error": "message not stored successfully"}), 500
 
 
 @app.route("/messages/<_hash>", methods=['GET'])
