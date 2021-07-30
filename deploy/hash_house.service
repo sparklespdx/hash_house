@@ -21,6 +21,7 @@ ExecStart=/usr/bin/podman run \
   --cgroups=disabled \
   --name=%n \
   -v /root/keys/hashhouse_aws:/root/.aws \
+  -v /root/keys/hashhouse_keys.json:/root/hashhouse_keys.json \
   -p 127.0.0.1:5000:5000 \
   -e "S3_BUCKET_NAME=joshfarwell-hashhouse" \
 	hash_house

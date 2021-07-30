@@ -1,8 +1,11 @@
-from flask import Flask, request
-import json
-import hashlib
-import re
+import bcrypt
 import boto3
+import hashlib
+import json
+import re
+
+from flask import Flask, request
+from flask_httpauth import HTTPTokenAuth
 
 from hash_house.util import limit_content_length, put_object, get_object
 
@@ -46,17 +49,32 @@ class Message:
 app = Flask(__name__)
 app.config.from_object("hash_house.config.Config")
 
+
 s3 = boto3.resource('s3')
 bucket = s3.Bucket(app.config['S3_BUCKET_NAME'])
 storage = Storage(bucket)
 
 
+auth = HTTPTokenAuth(scheme='Bearer')
+with open(app.config['APIKEY_FILE_PATH'], 'r') as f:
+    tokens = json.loads(f.read())
+
+
+@auth.verify_token
+def verify_token(token):
+    for t in tokens:
+        if bcrypt.checkpw(token.encode('utf-8'), t.encode('utf-8')):
+            return tokens[t]
+
+
 @app.route("/")
+@auth.login_required
 def root():
     return json.dumps({"info": "Welcome to Hash House. POST to /submit to store a string message and get a hash (something like this: {'message': 'foo'}). GET /messages/$HEXDIGEST to retrieve a message."}), 200
 
 
 @app.route("/submit", methods=['POST'])
+@auth.login_required
 @limit_content_length(app.config['MAX_CONTENT_LENGTH'])
 def submit_message():
 
@@ -77,6 +95,7 @@ def submit_message():
 
 
 @app.route("/messages/<_hash>", methods=['GET'])
+@auth.login_required
 def retrieve_message(_hash):
 
     error = json.dumps({"error": "/messages/$HASH must be a sha256 hex digest."})
