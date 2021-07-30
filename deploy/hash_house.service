@@ -11,17 +11,18 @@ MemoryMax=2G
 ExecStartPre=sleep 10
 ExecStartPre=/usr/bin/rm -f /%t/%n-pid /%t/%n-cid
 ExecStartPre=-/usr/bin/rm -rf /root/docker_build/hash_house
-ExecStartPre=-/usr/bin/git clone git@github.com:sparklespdx/hash_house.git /root/docker_build/hash_house
+ExecStartPre=-/usr/bin/git clone https://github.com/sparklespdx/hash_house.git /root/docker_build/hash_house
 ExecStartPre=/usr/bin/bash -c "cd /root/docker_build/hash_house && /usr/bin/podman build -t hash_house ."
 ExecStartPre=-/usr/bin/bash -c '/usr/bin/podman stop %n; /usr/bin/podman rm %n'
 ExecStart=/usr/bin/podman run \
-	--conmon-pidfile=/%t/%n-pid \
-	--cidfile=/%t/%n-cid \
-	--runtime=crun \
-	--cgroups=disabled \
-	--name=%n \
-	-v /root/keys/hashhouse_aws:/root/.aws \
-	-p 127.0.0.1:5000:5000 \
+  --conmon-pidfile=/%t/%n-pid \
+  --cidfile=/%t/%n-cid \
+  --runtime=crun \
+  --cgroups=disabled \
+  --name=%n \
+  -v /root/keys/hashhouse_aws:/root/.aws \
+  -p 127.0.0.1:5000:5000 \
+  -e "S3_BUCKET_NAME=joshfarwell-hashhouse" \
 	hash_house
 
 ExecStop=/usr/bin/sh -c "/usr/bin/podman rm -f `cat /%t/%n-cid`"
