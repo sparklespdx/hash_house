@@ -40,9 +40,7 @@ All requests to this service must have a Bearer token in the Authorization heade
 curl -H "Authorization: Bearer example-api-key" https://hashhouse.moop.energy
 ```
 
-Your API key must match a bcrypt hash stored in a JSON file on the server. We're using hashes here so we don't have to store our API keys in plaintext on the server.
-
-The path for this file is set using the `APIKEY_FILE_PATH` environment variable (see `hash_house/config.py`). The default path is `/root/hashhouse_keys.json`. The format of the file should look like this:
+Your API key must match a bcrypt hash stored in a JSON file on the server. The path for this file is set using the `APIKEY_FILE_PATH` environment variable (see `hash_house/config.py`). The default path is `/root/hashhouse_keys.json`. The format of the file should look like this:
 
 ```
 {"$AAAb$AAA$AAAAAAAAAA.YXuIX3ykfsuzeXAAAAAAAAAAAAAAAAAAA": "josh"}
