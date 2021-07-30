@@ -2,24 +2,30 @@ from flask import Flask, request
 import json
 import hashlib
 import re
+import boto3
 
 from hash_house.util import limit_content_length
 
+
 class Storage:
 
+    def __init__(self, dynamodb_table):
+        self.table = dynamodb_table
+
     def get(self, key):
-        return 'foobar'
+        item = self.table.get_item(Key={'key': key})
+        return item['value']
 
     def save(self, key, value):
-        return True
+        self.table.put_item(Item={'key': key, 'value': value})
 
 
 class Message:
 
-    def __init__(self):
+    def __init__(self, storage):
         self._hash = None
         self.body = None
-        self.storage = Storage()
+        self.storage = storage
 
     def _do_hashing(self, content):
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -37,15 +43,20 @@ class Message:
 app = Flask(__name__)
 app.config.from_object("hash_house.config.Config")
 
+# TODO DynamoDB stuff here
+table = None
+storage = Storage(table)
+
 
 @app.route("/")
 def root():
     return json.dumps({"info": "Welcome to Hash House. POST to /submit to store a string message and get a hash (something like this: {'message': 'foo'}). GET /messages/$HEXDIGEST to retrieve a message."}), 200
 
 
-@app.route("/submit", methods=["POST"])
+@app.route("/submit", methods=['POST'])
 @limit_content_length(app.config['MAX_CONTENT_LENGTH'])
 def submit_message():
+
     payload = request.get_json()
 
     if "message" not in payload:
@@ -54,12 +65,12 @@ def submit_message():
     if len(payload['message']) > app.config['UPLOAD_SIZE_LIMIT']:
         return json.dumps({"error": f"'message' is longer than {str(app.config['UPLOAD_SIZE_LIMIT'] / 1024 / 1024)}M"}), 400
 
-    message = Message()
+    message = Message(storage)
     message.save(payload['message'])
     return json.dumps({"hash": str(message._hash)}), 200
 
 
-@app.route("/messages/<_hash>", methods=["GET"])
+@app.route("/messages/<_hash>", methods=['GET'])
 def retrieve_message(_hash):
 
     error = json.dumps({"error": "/messages/$HASH must be a sha256 hex digest."})
@@ -69,10 +80,10 @@ def retrieve_message(_hash):
         return error, 400
 
     # Regex match for sha256 hex digest as a string
-    if re.match('^[a-fA-F0-9]{64}$', _hash) is None:
+    if re.match("^[a-fA-F0-9]{64}$", _hash) is None:
         return error, 400
 
-    message = Message()
+    message = Message(storage)
     message.get(_hash)
     if message.body is not None:
         return json.dumps({"message": message.body}), 200
