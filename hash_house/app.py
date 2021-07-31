@@ -72,7 +72,6 @@ def verify_token(token):
 
 
 @app.route("/")
-@auth.login_required
 def root():
     return json.dumps({"info": "Welcome to Hash House. POST to /submit to store a string message and get a hash (something like this: {'message': 'foo'}). GET /messages/$HEXDIGEST to retrieve a message."}), 200
 
