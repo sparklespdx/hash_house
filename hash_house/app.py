@@ -67,8 +67,9 @@ with open(app.config['APIKEY_FILE_PATH'], 'r') as f:
 @auth.verify_token
 def verify_token(token):
     for t in tokens:
-        if bcrypt.checkpw(token.encode('utf-8'), t.encode('utf-8')):
-            return tokens[t]
+        if len(token) <= app.config(['APIKEY_MAX_LENGTH']):
+            if bcrypt.checkpw(token.encode('utf-8'), t.encode('utf-8')):
+                return tokens[t]
 
 
 @app.route("/")
