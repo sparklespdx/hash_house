@@ -14,8 +14,8 @@ from hash_house.util import limit_content_length, put_object, get_object
 
 class Storage:
 
-    def __init__(self, s3_bucket):
-        self.bucket = s3_bucket
+    def __init__(self, bucket):
+        self.bucket = bucket
 
     def get(self, key):
         try:
